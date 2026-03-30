@@ -60,7 +60,7 @@ def process_image(img: Image.Image) -> Image.Image:
     img = ImageEnhance.Sharpness(img).enhance(SHARPNESS_FACTOR)
     img = ImageEnhance.Contrast(img).enhance(CONTRAST_FACTOR)
     img = ImageOps.autocontrast(img, cutoff=AUTO_CONTRAST_CUTOFF)
-    img = img.point(lambda p: 255 if p > THRESHOLD else 0)
+    #img = img.point(lambda p: 255 if p > THRESHOLD else 0)
 
     return img
 
