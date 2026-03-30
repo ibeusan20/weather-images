@@ -16,7 +16,7 @@ USER_AGENT = "kindle-weather-builder/1.0"
 
 SHARPNESS_FACTOR = 1.8
 CONTRAST_FACTOR = 2.0
-THRESHOLD = 185
+THRESHOLD = 175
 AUTO_CONTRAST_CUTOFF = 0
 
 def load_sources():
