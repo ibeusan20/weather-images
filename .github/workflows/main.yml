@@ -2,7 +2,7 @@ name: Weather images
 
 on:
   schedule:
-    - cron: "*/120 * * * *"
+    - cron: "*/60 */2 * * *"
   workflow_dispatch:
 
 permissions:
