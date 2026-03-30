@@ -15,9 +15,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 USER_AGENT = "kindle-weather-builder/1.0"
 
 SHARPNESS_FACTOR = 1.8
-CONTRAST_FACTOR = 2.6
-THRESHOLD = 205
-AUTO_CONTRAST_CUTOFF = 1
+CONTRAST_FACTOR = 2.0
+THRESHOLD = 185
+AUTO_CONTRAST_CUTOFF = 0
 
 def load_sources():
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
