@@ -5,7 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "image-sources.json"
@@ -14,6 +14,10 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 USER_AGENT = "kindle-weather-builder/1.0"
 
+SHARPNESS_FACTOR = 1.8
+CONTRAST_FACTOR = 2.6
+THRESHOLD = 205
+AUTO_CONTRAST_CUTOFF = 1
 
 def load_sources():
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
@@ -40,23 +44,25 @@ def download_image(url: str) -> Image.Image:
     return img
 
 
-def invert_image(img: Image.Image) -> Image.Image:
-    if img.mode in ("RGBA", "LA"):
-        rgba = img.convert("RGBA")
-        r, g, b, a = rgba.split()
-        rgb = Image.merge("RGB", (r, g, b))
-        inverted_rgb = ImageOps.invert(rgb)
-        r2, g2, b2 = inverted_rgb.split()
-        return Image.merge("RGBA", (r2, g2, b2, a))
-
+def process_image(img: Image.Image) -> Image.Image:
     if img.mode == "P":
         img = img.convert("RGBA")
-        return invert_image(img)
 
-    if img.mode != "RGB":
+    if img.mode in ("RGBA", "LA"):
+        img = img.convert("RGBA")
+        background = Image.new("RGBA", img.size, (0, 0, 0, 255))
+        img = Image.alpha_composite(background, img).convert("RGB")
+    else:
         img = img.convert("RGB")
 
-    return ImageOps.invert(img)
+    img = ImageOps.invert(img)
+    img = img.convert("L")
+    img = ImageEnhance.Sharpness(img).enhance(SHARPNESS_FACTOR)
+    img = ImageEnhance.Contrast(img).enhance(CONTRAST_FACTOR)
+    img = ImageOps.autocontrast(img, cutoff=AUTO_CONTRAST_CUTOFF)
+    img = img.point(lambda p: 255 if p > THRESHOLD else 0)
+
+    return img
 
 
 def save_png(img: Image.Image, path: Path) -> None:
@@ -81,7 +87,7 @@ def main() -> int:
             print(f"[INFO] Skidam {name} sa {url}")
             img = download_image(url)
             print(f"[INFO] Invertiram {name}")
-            inv = invert_image(img)
+            inv = process_image(img)
             save_png(inv, out_path)
             status["files"][name] = {
                 "url": url,
