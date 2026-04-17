@@ -1,33 +1,33 @@
 {
-  "updated_at_utc": "2026-04-17T11:42:30.039755+00:00",
+  "updated_at_utc": "2026-04-17T11:50:06.120123+00:00",
   "files": {
     "weather": {
-      "url": "https://wttr.in/Varazdin.png?format=v2",
+      "url": "https://wttr.in/Varazdin.png?M&format=v2",
       "output": "generated/weather.png",
       "ok": true
     },
     "weather1": {
-      "url": "https://wttr.in/Varazdin.png",
+      "url": "https://wttr.in/Varazdin.png?M",
       "output": "generated/weather1.png",
       "ok": true
     },
     "weather2": {
-      "url": "https://wttr.in/Zagreb.png?format=v2",
+      "url": "https://wttr.in/Zagreb.png?M&format=v2",
       "output": "generated/weather2.png",
       "ok": true
     },
     "weather3": {
-      "url": "https://wttr.in/Zagreb.png",
+      "url": "https://wttr.in/Zagreb.png?M",
       "output": "generated/weather3.png",
       "ok": true
     },
     "weather4": {
-      "url": "https://wttr.in/Dubrovnik.png?format=v2",
+      "url": "https://wttr.in/Dubrovnik.png?M&format=v2",
       "output": "generated/weather4.png",
       "ok": true
     },
     "weather5": {
-      "url": "https://wttr.in/Dubrovnik.png",
+      "url": "https://wttr.in/Dubrovnik.png?M",
       "output": "generated/weather5.png",
       "ok": true
     }
