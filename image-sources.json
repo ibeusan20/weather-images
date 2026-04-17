@@ -1,8 +1,8 @@
 {
-    "weather" : "https://wttr.in/Varazdin.png?format=v2",
-    "weather1" : "https://wttr.in/Varazdin.png",
-    "weather2" : "https://wttr.in/Zagreb.png?format=v2",
-    "weather3" : "https://wttr.in/Zagreb.png",
-    "weather4" : "https://wttr.in/Dubrovnik.png?format=v2",
-    "weather5" : "https://wttr.in/Dubrovnik.png"
+    "weather" : "https://wttr.in/Varazdin.png?M&format=v2",
+    "weather1" : "https://wttr.in/Varazdin.png?M",
+    "weather2" : "https://wttr.in/Zagreb.png?M&format=v2",
+    "weather3" : "https://wttr.in/Zagreb.png?M",
+    "weather4" : "https://wttr.in/Dubrovnik.png?M&format=v2",
+    "weather5" : "https://wttr.in/Dubrovnik.png?M"
 }
