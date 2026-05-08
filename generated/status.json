@@ -1,5 +1,5 @@
 {
-  "updated_at_utc": "2026-05-08T12:50:21.271848+00:00",
+  "updated_at_utc": "2026-05-08T13:34:26.973460+00:00",
   "files": {
     "weather": {
       "url": "https://wttr.in/Varazdin.png?format=v2&m",
@@ -29,6 +29,30 @@
     "weather5": {
       "url": "https://wttr.in/Dubrovnik.png?m",
       "output": "generated/weather5.png",
+      "ok": true
+    },
+    "weather01": {
+      "source_images": [
+        "weather",
+        "weather1"
+      ],
+      "output": "generated/weather01.png",
+      "ok": true
+    },
+    "weather23": {
+      "source_images": [
+        "weather2",
+        "weather3"
+      ],
+      "output": "generated/weather23.png",
+      "ok": true
+    },
+    "weather45": {
+      "source_images": [
+        "weather4",
+        "weather5"
+      ],
+      "output": "generated/weather45.png",
       "ok": true
     }
   }
