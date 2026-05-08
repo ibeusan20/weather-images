@@ -14,9 +14,6 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 USER_AGENT = "kindle-weather-builder/1.0"
 
-KINDLE_WIDTH = 1072
-KINDLE_HEIGHT = 1448
-
 SHARPNESS_FACTOR = 1.8
 CONTRAST_FACTOR = 2.0
 THRESHOLD = 195
@@ -75,55 +72,33 @@ def process_image(img: Image.Image) -> Image.Image:
     return img
 
 
-def resize_to_fit(img: Image.Image, max_width: int, max_height: int) -> Image.Image:
-    """
-    Smanji/povećaj sliku tako da stane unutar zadanog prostora,
-    uz očuvanje omjera stranica.
-    """
-    img = img.copy()
-    img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-    return img
-
-def resize_to_fit_area(img: Image.Image, target_width: int, target_height: int) -> Image.Image:
-    """
-    Resize tako da cijela slika stane unutar zadanog područja
-    bez rezanja. Preostali prostor ostaje bijel.
-    """
-    if img.mode != "L":
-        img = img.convert("L")
-
-    img = img.copy()
-    img.thumbnail((target_width, target_height), Image.Resampling.LANCZOS)
-
-    canvas = Image.new("L", (target_width, target_height), color=255)
-
-    x = (target_width - img.width) // 2
-    y = (target_height - img.height) // 2
-
-    canvas.paste(img, (x, y))
-    return canvas
-
-
 def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Image:
     """
-    Konačna spojena slika uvijek je točno 1072x1448 za Kindle 2024.
-    Gornja slika zauzima gornje 2/3, donja donju 1/3.
+    Spaja dvije slike vertikalno:
+    - top_img ide gore
+    - bottom_img ide dolje
+
+    Ako nisu iste širine, uža se centrira.
+    Pozadina je bijela.
     """
-    width = KINDLE_WIDTH
-    total_height = KINDLE_HEIGHT
+    if top_img.mode != "L":
+        top_img = top_img.convert("L")
+    if bottom_img.mode != "L":
+        bottom_img = bottom_img.convert("L")
 
-    top_area_height = (total_height * 2) // 3
-    bottom_area_height = total_height - top_area_height
+    width = max(top_img.width, bottom_img.width)
+    height = top_img.height + bottom_img.height
 
-    top_resized = resize_to_fit_area(top_img, width, top_area_height)
-    bottom_resized = resize_to_fit_area(bottom_img, width, bottom_area_height)
+    combined = Image.new("L", (width, height), color=255)
 
-    combined = Image.new("L", (width, total_height), color=255)
+    top_x = (width - top_img.width) // 2
+    bottom_x = (width - bottom_img.width) // 2
 
-    combined.paste(top_resized, (0, 0))
-    combined.paste(bottom_resized, (0, top_area_height))
+    combined.paste(top_img, (top_x, 0))
+    combined.paste(bottom_img, (bottom_x, top_img.height))
 
     return combined
+
 
 def save_png(img: Image.Image, path: Path) -> None:
     img.save(path, format="PNG", optimize=True)
@@ -153,9 +128,8 @@ def main() -> int:
             print(f"[INFO] Invertiram {name}")
             inv = process_image(img)
 
-            fitted = resize_to_fit_area(inv, KINDLE_WIDTH, KINDLE_HEIGHT)
-            save_png(fitted, out_path)
-            processed_images[name] = fitted
+            save_png(inv, out_path)
+            processed_images[name] = inv
 
             status["files"][name] = {
                 "url": url,
