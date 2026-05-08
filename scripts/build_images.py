@@ -84,32 +84,24 @@ def resize_to_fit(img: Image.Image, max_width: int, max_height: int) -> Image.Im
     img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
     return img
 
-def resize_to_fill_area(img: Image.Image, target_width: int, target_height: int) -> Image.Image:
+def resize_to_fit_area(img: Image.Image, target_width: int, target_height: int) -> Image.Image:
     """
-    Resize + crop tako da slika potpuno ispuni zadanu zonu.
-    Ne ostavlja bijele rubove.
+    Resize tako da cijela slika stane unutar zadanog područja
+    bez rezanja. Preostali prostor ostaje bijel.
     """
     if img.mode != "L":
         img = img.convert("L")
 
-    img_ratio = img.width / img.height
-    target_ratio = target_width / target_height
+    img = img.copy()
+    img.thumbnail((target_width, target_height), Image.Resampling.LANCZOS)
 
-    if img_ratio > target_ratio:
-        new_height = target_height
-        new_width = int(target_height * img_ratio)
-    else:
-        new_width = target_width
-        new_height = int(target_width / img_ratio)
+    canvas = Image.new("L", (target_width, target_height), color=255)
 
-    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    x = (target_width - img.width) // 2
+    y = (target_height - img.height) // 2
 
-    left = (new_width - target_width) // 2
-    top = (new_height - target_height) // 2
-    right = left + target_width
-    bottom = top + target_height
-
-    return img.crop((left, top, right, bottom))
+    canvas.paste(img, (x, y))
+    return canvas
 
 
 def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Image:
@@ -123,8 +115,8 @@ def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Ima
     top_area_height = (total_height * 2) // 3
     bottom_area_height = total_height - top_area_height
 
-    top_resized = resize_to_fill_area(top_img, width, top_area_height)
-    bottom_resized = resize_to_fill_area(bottom_img, width, bottom_area_height)
+    top_resized = resize_to_fit_area(top_img, width, top_area_height)
+    bottom_resized = resize_to_fit_area(bottom_img, width, bottom_area_height)
 
     combined = Image.new("L", (width, total_height), color=255)
 
@@ -161,8 +153,9 @@ def main() -> int:
             print(f"[INFO] Invertiram {name}")
             inv = process_image(img)
 
-            save_png(inv, out_path)
-            processed_images[name] = inv
+            fitted = resize_to_fit_area(inv, KINDLE_WIDTH, KINDLE_HEIGHT)
+            save_png(fitted, out_path)
+            processed_images[name] = fitted
 
             status["files"][name] = {
                 "url": url,
