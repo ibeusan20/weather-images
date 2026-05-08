@@ -72,13 +72,23 @@ def process_image(img: Image.Image) -> Image.Image:
     return img
 
 
+def resize_to_fit(img: Image.Image, max_width: int, max_height: int) -> Image.Image:
+    """
+    Smanji/povećaj sliku tako da stane unutar zadanog prostora,
+    uz očuvanje omjera stranica.
+    """
+    img = img.copy()
+    img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+    return img
+
+
 def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Image:
     """
-    Spaja dvije slike vertikalno:
-    - top_img ide gore
-    - bottom_img ide dolje
+    Spaja dvije slike vertikalno tako da:
+    - gornja slika zauzima gornje 2/3 ukupne visine
+    - donja slika zauzima donju 1/3 ukupne visine
 
-    Ako nisu iste širine, uža se centrira.
+    Slike se skaliraju da stanu u svoju zonu i centriraju se.
     Pozadina je bijela.
     """
     if top_img.mode != "L":
@@ -86,16 +96,33 @@ def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Ima
     if bottom_img.mode != "L":
         bottom_img = bottom_img.convert("L")
 
+    # Ukupna širina = veća od dvije širine
     width = max(top_img.width, bottom_img.width)
-    height = top_img.height + bottom_img.height
 
-    combined = Image.new("L", (width, height), color=255)
+    # Ukupna visina može ostati zbroj originalnih visina
+    total_height = top_img.height + bottom_img.height
 
-    top_x = (width - top_img.width) // 2
-    bottom_x = (width - bottom_img.width) // 2
+    # Zone: top = 2/3, bottom = 1/3
+    top_area_height = (total_height * 2) // 3
+    bottom_area_height = total_height - top_area_height
 
-    combined.paste(top_img, (top_x, 0))
-    combined.paste(bottom_img, (bottom_x, top_img.height))
+    # Resize svake slike da stane u svoju zonu
+    top_resized = resize_to_fit(top_img, width, top_area_height)
+    bottom_resized = resize_to_fit(bottom_img, width, bottom_area_height)
+
+    # Napravi bijeli canvas
+    combined = Image.new("L", (width, total_height), color=255)
+
+    # Centriraj gornju sliku u gornjoj zoni
+    top_x = (width - top_resized.width) // 2
+    top_y = (top_area_height - top_resized.height) // 2
+
+    # Centriraj donju sliku u donjoj zoni
+    bottom_x = (width - bottom_resized.width) // 2
+    bottom_y = top_area_height + ((bottom_area_height - bottom_resized.height) // 2)
+
+    combined.paste(top_resized, (top_x, top_y))
+    combined.paste(bottom_resized, (bottom_x, bottom_y))
 
     return combined
 
