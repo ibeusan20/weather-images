@@ -19,6 +19,13 @@ CONTRAST_FACTOR = 2.0
 THRESHOLD = 195
 AUTO_CONTRAST_CUTOFF = 0
 
+COMBINATIONS = [
+    ("weather01", "weather", "weather1"),
+    ("weather23", "weather2", "weather3"),
+    ("weather45", "weather4", "weather5"),
+]
+
+
 def load_sources():
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
         data = json.load(f)
@@ -60,9 +67,37 @@ def process_image(img: Image.Image) -> Image.Image:
     img = ImageEnhance.Sharpness(img).enhance(SHARPNESS_FACTOR)
     img = ImageEnhance.Contrast(img).enhance(CONTRAST_FACTOR)
     img = ImageOps.autocontrast(img, cutoff=AUTO_CONTRAST_CUTOFF)
-    #img = img.point(lambda p: 255 if p > THRESHOLD else 0)
+    # img = img.point(lambda p: 255 if p > THRESHOLD else 0)
 
     return img
+
+
+def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Image:
+    """
+    Spaja dvije slike vertikalno:
+    - top_img ide gore
+    - bottom_img ide dolje
+
+    Ako nisu iste širine, uža se centrira.
+    Pozadina je bijela.
+    """
+    if top_img.mode != "L":
+        top_img = top_img.convert("L")
+    if bottom_img.mode != "L":
+        bottom_img = bottom_img.convert("L")
+
+    width = max(top_img.width, bottom_img.width)
+    height = top_img.height + bottom_img.height
+
+    combined = Image.new("L", (width, height), color=255)
+
+    top_x = (width - top_img.width) // 2
+    bottom_x = (width - bottom_img.width) // 2
+
+    combined.paste(top_img, (top_x, 0))
+    combined.paste(bottom_img, (bottom_x, top_img.height))
+
+    return combined
 
 
 def save_png(img: Image.Image, path: Path) -> None:
@@ -81,14 +116,21 @@ def main() -> int:
         "files": {}
     }
 
+    processed_images = {}
+
+    # 1) Skini i obradi pojedinačne slike
     for name, url in sources.items():
         out_path = OUTPUT_DIR / f"{name}.png"
         try:
             print(f"[INFO] Skidam {name} sa {url}")
             img = download_image(url)
+
             print(f"[INFO] Invertiram {name}")
             inv = process_image(img)
+
             save_png(inv, out_path)
+            processed_images[name] = inv
+
             status["files"][name] = {
                 "url": url,
                 "output": str(out_path.relative_to(ROOT)),
@@ -103,6 +145,34 @@ def main() -> int:
                 "error": str(e)
             }
             print(f"[ERROR] {name}: {e}", file=sys.stderr)
+            return 1
+
+    # 2) Napravi spojene slike
+    for combined_name, top_name, bottom_name in COMBINATIONS:
+        out_path = OUTPUT_DIR / f"{combined_name}.png"
+        try:
+            print(f"[INFO] Spajam {top_name} + {bottom_name} -> {combined_name}")
+            combined_img = combine_vertical(
+                processed_images[top_name],
+                processed_images[bottom_name]
+            )
+
+            save_png(combined_img, out_path)
+
+            status["files"][combined_name] = {
+                "source_images": [top_name, bottom_name],
+                "output": str(out_path.relative_to(ROOT)),
+                "ok": True
+            }
+            print(f"[OK] Spremljeno: {out_path}")
+        except Exception as e:
+            status["files"][combined_name] = {
+                "source_images": [top_name, bottom_name],
+                "output": str(out_path.relative_to(ROOT)),
+                "ok": False,
+                "error": str(e)
+            }
+            print(f"[ERROR] {combined_name}: {e}", file=sys.stderr)
             return 1
 
     status_path = OUTPUT_DIR / "status.json"
