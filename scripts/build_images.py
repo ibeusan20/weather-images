@@ -14,6 +14,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 USER_AGENT = "kindle-weather-builder/1.0"
 
+KINDLE_WIDTH = 1072
+KINDLE_HEIGHT = 1448
+
 SHARPNESS_FACTOR = 1.8
 CONTRAST_FACTOR = 2.0
 THRESHOLD = 195
@@ -81,51 +84,54 @@ def resize_to_fit(img: Image.Image, max_width: int, max_height: int) -> Image.Im
     img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
     return img
 
+def resize_to_fill_area(img: Image.Image, target_width: int, target_height: int) -> Image.Image:
+    """
+    Resize + crop tako da slika potpuno ispuni zadanu zonu.
+    Ne ostavlja bijele rubove.
+    """
+    if img.mode != "L":
+        img = img.convert("L")
+
+    img_ratio = img.width / img.height
+    target_ratio = target_width / target_height
+
+    if img_ratio > target_ratio:
+        new_height = target_height
+        new_width = int(target_height * img_ratio)
+    else:
+        new_width = target_width
+        new_height = int(target_width / img_ratio)
+
+    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    left = (new_width - target_width) // 2
+    top = (new_height - target_height) // 2
+    right = left + target_width
+    bottom = top + target_height
+
+    return img.crop((left, top, right, bottom))
+
 
 def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Image:
     """
-    Spaja dvije slike vertikalno tako da:
-    - gornja slika zauzima gornje 2/3 ukupne visine
-    - donja slika zauzima donju 1/3 ukupne visine
-
-    Slike se skaliraju da stanu u svoju zonu i centriraju se.
-    Pozadina je bijela.
+    Konačna spojena slika uvijek je točno 1072x1448 za Kindle 2024.
+    Gornja slika zauzima gornje 2/3, donja donju 1/3.
     """
-    if top_img.mode != "L":
-        top_img = top_img.convert("L")
-    if bottom_img.mode != "L":
-        bottom_img = bottom_img.convert("L")
+    width = KINDLE_WIDTH
+    total_height = KINDLE_HEIGHT
 
-    # Ukupna širina = veća od dvije širine
-    width = max(top_img.width, bottom_img.width)
-
-    # Ukupna visina može ostati zbroj originalnih visina
-    total_height = top_img.height + bottom_img.height
-
-    # Zone: top = 2/3, bottom = 1/3
     top_area_height = (total_height * 2) // 3
     bottom_area_height = total_height - top_area_height
 
-    # Resize svake slike da stane u svoju zonu
-    top_resized = resize_to_fit(top_img, width, top_area_height)
-    bottom_resized = resize_to_fit(bottom_img, width, bottom_area_height)
+    top_resized = resize_to_fill_area(top_img, width, top_area_height)
+    bottom_resized = resize_to_fill_area(bottom_img, width, bottom_area_height)
 
-    # Napravi bijeli canvas
     combined = Image.new("L", (width, total_height), color=255)
 
-    # Centriraj gornju sliku u gornjoj zoni
-    top_x = (width - top_resized.width) // 2
-    top_y = (top_area_height - top_resized.height) // 2
-
-    # Centriraj donju sliku u donjoj zoni
-    bottom_x = (width - bottom_resized.width) // 2
-    bottom_y = top_area_height + ((bottom_area_height - bottom_resized.height) // 2)
-
-    combined.paste(top_resized, (top_x, top_y))
-    combined.paste(bottom_resized, (bottom_x, bottom_y))
+    combined.paste(top_resized, (0, 0))
+    combined.paste(bottom_resized, (0, top_area_height))
 
     return combined
-
 
 def save_png(img: Image.Image, path: Path) -> None:
     img.save(path, format="PNG", optimize=True)
