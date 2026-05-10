@@ -14,8 +14,8 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 USER_AGENT = "kindle-weather-builder/1.0"
 
-SHARPNESS_FACTOR = 1.2
-CONTRAST_FACTOR = 1.6
+SHARPNESS_FACTOR = 1.8
+CONTRAST_FACTOR = 2.0
 THRESHOLD = 195
 AUTO_CONTRAST_CUTOFF = 0
 
