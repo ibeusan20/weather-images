@@ -21,6 +21,7 @@ AUTO_CONTRAST_CUTOFF = 0
 
 KINDLE_WIDTH = 1072
 KINDLE_HEIGHT = 1448
+HORIZONTAL_MARGIN = 20
 
 COMBINATIONS = [
     ("weather01", "weather", "weather1"),
@@ -83,9 +84,8 @@ def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Ima
     - ukupna visina = KINDLE_HEIGHT
     - gornja slika zauzima oko 2/3 visine
     - donja slika zauzima ostatak
-
-    Slike se po potrebi rastežu / spljošte da ispune svoj prostor.
-    Ništa se ne reže.
+    - dodaje mali lijevi/desni margin
+    - ništa se ne reže
     """
     if top_img.mode != "L":
         top_img = top_img.convert("L")
@@ -98,12 +98,15 @@ def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Ima
     top_height = (height * 2) // 3
     bottom_height = height - top_height
 
-    top_resized = top_img.resize((width, top_height), Image.Resampling.LANCZOS)
-    bottom_resized = bottom_img.resize((width, bottom_height), Image.Resampling.LANCZOS)
+    inner_width = width - (2 * HORIZONTAL_MARGIN)
+
+    top_resized = top_img.resize((inner_width, top_height), Image.Resampling.LANCZOS)
+    bottom_resized = bottom_img.resize((inner_width, bottom_height), Image.Resampling.LANCZOS)
 
     combined = Image.new("L", (width, height), color=255)
-    combined.paste(top_resized, (0, 0))
-    combined.paste(bottom_resized, (0, top_height))
+
+    combined.paste(top_resized, (HORIZONTAL_MARGIN, 0))
+    combined.paste(bottom_resized, (HORIZONTAL_MARGIN, top_height))
 
     return combined
     
