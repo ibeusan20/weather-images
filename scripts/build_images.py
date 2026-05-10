@@ -16,7 +16,7 @@ USER_AGENT = "kindle-weather-builder/1.0"
 
 SHARPNESS_FACTOR = 1.8
 CONTRAST_FACTOR = 2.0
-THRESHOLD = 170
+THRESHOLD = 195
 AUTO_CONTRAST_CUTOFF = 0
 
 KINDLE_WIDTH = 1072
@@ -71,7 +71,7 @@ def process_image(img: Image.Image) -> Image.Image:
     img = ImageEnhance.Sharpness(img).enhance(SHARPNESS_FACTOR)
     img = ImageEnhance.Contrast(img).enhance(CONTRAST_FACTOR)
     img = ImageOps.autocontrast(img, cutoff=AUTO_CONTRAST_CUTOFF)
-    # img = img.point(lambda p: 255 if p > THRESHOLD else 0)
+    img = img.point(lambda p: 255 if p > THRESHOLD else 0)
 
     return img
 
