@@ -19,6 +19,9 @@ CONTRAST_FACTOR = 2.0
 THRESHOLD = 195
 AUTO_CONTRAST_CUTOFF = 0
 
+KINDLE_MAX_HEIGHT = 1448
+KINDLE_BOTTOM_MARGIN = 20
+
 COMBINATIONS = [
     ("weather01", "weather", "weather1"),
     ("weather23", "weather2", "weather3"),
@@ -74,28 +77,47 @@ def process_image(img: Image.Image) -> Image.Image:
 
 def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Image:
     """
-    Spaja dvije slike vertikalno:
-    - top_img ide gore
-    - bottom_img ide dolje
+    Spaja dvije slike vertikalno.
 
-    Ako nisu iste širine, uža se centrira.
-    Pozadina je bijela.
+    Gornja slika ostaje potpuno ista.
+    Donja slika se prilagodi na širinu gornje slike i spljošti po visini
+    tako da ukupna slika ne prelazi visinu Kindle zaslona.
+    Ništa se ne reže.
     """
     if top_img.mode != "L":
         top_img = top_img.convert("L")
     if bottom_img.mode != "L":
         bottom_img = bottom_img.convert("L")
 
-    width = max(top_img.width, bottom_img.width)
-    height = top_img.height + bottom_img.height
+    # Gornja slika određuje širinu rezultata
+    width = top_img.width
+
+    # Maksimalna visina kombinirane slike
+    max_total_height = KINDLE_MAX_HEIGHT
+
+    # Koliko prostora ostaje za donju sliku
+    available_bottom_height = max_total_height - top_img.height # - KINDLE_BOTTOM_MARGIN
+
+    if available_bottom_height <= 0:
+        raise ValueError(
+            f"Gornja slika je već previsoka: {top_img.width}x{top_img.height}, "
+            f"a maksimalna visina je {max_total_height}."
+        )
+
+    # Donju sliku rastegni/spljošti na širinu gornje slike
+    # i na preostalu visinu Kindle zaslona.
+    bottom_resized = bottom_img.resize(
+        (width, available_bottom_height),
+        Image.Resampling.LANCZOS
+    )
+
+    # Konačna visina = gornja slika + spljoštena donja slika
+    height = top_img.height + bottom_resized.height
 
     combined = Image.new("L", (width, height), color=255)
 
-    top_x = (width - top_img.width) // 2
-    bottom_x = (width - bottom_img.width) // 2
-
-    combined.paste(top_img, (top_x, 0))
-    combined.paste(bottom_img, (bottom_x, top_img.height))
+    combined.paste(top_img, (0, 0))
+    combined.paste(bottom_resized, (0, top_img.height))
 
     return combined
 
