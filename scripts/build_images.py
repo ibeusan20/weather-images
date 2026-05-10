@@ -19,8 +19,8 @@ CONTRAST_FACTOR = 2.0
 THRESHOLD = 195
 AUTO_CONTRAST_CUTOFF = 0
 
-KINDLE_MAX_HEIGHT = 1448
-KINDLE_BOTTOM_MARGIN = 20
+KINDLE_WIDTH = 1072
+KINDLE_HEIGHT = 1448
 
 COMBINATIONS = [
     ("weather01", "weather", "weather1"),
@@ -77,11 +77,14 @@ def process_image(img: Image.Image) -> Image.Image:
 
 def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Image:
     """
-    Spaja dvije slike vertikalno.
+    Spaja dvije slike u jednu Kindle sliku fiksne veličine.
 
-    Gornja slika ostaje potpuno ista.
-    Donja slika se prilagodi na širinu gornje slike i spljošti po visini
-    tako da ukupna slika ne prelazi visinu Kindle zaslona.
+    - ukupna širina = KINDLE_WIDTH
+    - ukupna visina = KINDLE_HEIGHT
+    - gornja slika zauzima oko 2/3 visine
+    - donja slika zauzima ostatak
+
+    Slike se po potrebi rastežu / spljošte da ispune svoj prostor.
     Ništa se ne reže.
     """
     if top_img.mode != "L":
@@ -89,38 +92,21 @@ def combine_vertical(top_img: Image.Image, bottom_img: Image.Image) -> Image.Ima
     if bottom_img.mode != "L":
         bottom_img = bottom_img.convert("L")
 
-    # Gornja slika određuje širinu rezultata
-    width = top_img.width
+    width = KINDLE_WIDTH
+    height = KINDLE_HEIGHT
 
-    # Maksimalna visina kombinirane slike
-    max_total_height = KINDLE_MAX_HEIGHT
+    top_height = (height * 2) // 3
+    bottom_height = height - top_height
 
-    # Koliko prostora ostaje za donju sliku
-    available_bottom_height = max_total_height - top_img.height # - KINDLE_BOTTOM_MARGIN
-
-    if available_bottom_height <= 0:
-        raise ValueError(
-            f"Gornja slika je već previsoka: {top_img.width}x{top_img.height}, "
-            f"a maksimalna visina je {max_total_height}."
-        )
-
-    # Donju sliku rastegni/spljošti na širinu gornje slike
-    # i na preostalu visinu Kindle zaslona.
-    bottom_resized = bottom_img.resize(
-        (width, available_bottom_height),
-        Image.Resampling.LANCZOS
-    )
-
-    # Konačna visina = gornja slika + spljoštena donja slika
-    height = top_img.height + bottom_resized.height
+    top_resized = top_img.resize((width, top_height), Image.Resampling.LANCZOS)
+    bottom_resized = bottom_img.resize((width, bottom_height), Image.Resampling.LANCZOS)
 
     combined = Image.new("L", (width, height), color=255)
-
-    combined.paste(top_img, (0, 0))
-    combined.paste(bottom_resized, (0, top_img.height))
+    combined.paste(top_resized, (0, 0))
+    combined.paste(bottom_resized, (0, top_height))
 
     return combined
-
+    
 
 def save_png(img: Image.Image, path: Path) -> None:
     img.save(path, format="PNG", optimize=True)
